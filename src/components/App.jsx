@@ -1,77 +1,60 @@
 import { Form } from 'components/Todos/Form';
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { ContactList } from './ContactList/ContactList';
 import { Filter } from './Filter/Filter';
 
-const LOCAL_KEY = 'name';
+const LOCAL_KEY = 'contacts';
 
-export class App extends Component {
-  state = {
-    contacts: [
-      { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-      { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-      { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-      { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-    ],
-    filter: '',
-  };
+export const App = () => {
+  const [contacts, setContacts] = useState(() => {
+    const storedContacts = localStorage.getItem(LOCAL_KEY);
+    return JSON.parse(storedContacts) || [];
+  });
 
-  componentDidMount() {
-    const contacts = JSON.parse(localStorage.getItem(LOCAL_KEY));
-    if (contacts) {
-      this.setState({ contacts });
-    }
-  }
+  const [filter, setFilter] = useState('');
 
-  componentDidUpdate(_, prevState) {
-    if (prevState.contacts !== this.state.contacts) {
-      localStorage.setItem(LOCAL_KEY, JSON.stringify(this.state.contacts));
-    }
-  }
+  useEffect(() => {
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(contacts));
+  }, [contacts]);
 
-  handleAddContact = contactNew => {
-    const { contacts } = this.state;
+  const handleAddContact = contactNew => {
     const isExist = contacts.find(
       contact => contactNew.name.toLowerCase() === contact.name.toLowerCase()
     );
-    if (isExist) return alert('enter something');
+    if (isExist) {
+      alert('enter something');
+      return;
+    }
 
-    this.setState(prevState => ({
-      contacts: [...prevState.contacts, contactNew],
-    }));
+    setContacts(prevContacts => [...prevContacts, contactNew]);
   };
 
-  handleFilter = event => {
-    const { name, value } = event.target;
-    this.setState({ [name]: value });
+  const handleFilter = event => {
+    const { value } = event.target;
+    setFilter(value);
   };
 
-  getFilteredContacts = () => {
-    const { filter, contacts } = this.state;
+  const getFilteredContacts = () => {
+    const normalizedFilter = filter.toLocaleLowerCase();
     return contacts.filter(({ name }) =>
-      name.toLowerCase().includes(filter.toLowerCase())
+      name.toLowerCase().includes(normalizedFilter)
     );
   };
 
-  handleDeleteContact = contactId => {
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(({ id }) => id !== contactId),
-    }));
+  const handleDeleteContact = contactId => {
+    setContacts(prevContacts =>
+      prevContacts.filter(({ id }) => id !== contactId)
+    );
   };
 
-  render() {
-    const filteredContacts = this.getFilteredContacts();
-    return (
-      <div>
-        <h1>Phone book</h1>
-        <Form onAddContact={this.handleAddContact} />
-        <h2>Contacts</h2>
-        <Filter onChange={this.handleFilter} />
-        <ContactList
-          contacts={filteredContacts}
-          onDelete={this.handleDeleteContact}
-        />
-      </div>
-    );
-  }
-}
+  const filteredContacts = getFilteredContacts();
+  return (
+    <div>
+      <h1>Phone book</h1>
+      <Form onAddContact={handleAddContact} />
+      <h2>Contacts</h2>
+      <Filter onChange={handleFilter} />
+      <ContactList contacts={filteredContacts} onDelete={handleDeleteContact} />
+    </div>
+  );
+};
